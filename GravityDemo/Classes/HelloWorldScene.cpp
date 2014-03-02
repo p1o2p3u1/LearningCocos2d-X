@@ -1,6 +1,8 @@
 #include "HelloWorldScene.h"
 
-USING_NS_CC;
+b2World* world;
+b2Vec2 gravity;
+
 
 CCScene* HelloWorld::scene()
 {
@@ -22,7 +24,7 @@ bool HelloWorld::init()
 {
     //////////////////////////////
     // 1. super init first
-    if ( !CCLayer::init() )
+	if ( !CCSprite::init() )
     {
         return false;
     }
@@ -55,27 +57,104 @@ bool HelloWorld::init()
     // add a label shows "Hello World"
     // create and initialize a label
     
-    CCLabelTTF* pLabel = CCLabelTTF::create("Hello World", "Arial", 24);
-    
-    // position the label on the center of the screen
-    pLabel->setPosition(ccp(origin.x + visibleSize.width/2,
-                            origin.y + visibleSize.height - pLabel->getContentSize().height));
 
-    // add the label as a child to this layer
-    this->addChild(pLabel, 1);
+	gravity.Set(0.0f,-WORLD_TO_SCREEN(9.8));
+	bool doSleep = true;
 
-    // add "HelloWorld" splash screen"
-    CCSprite* pSprite = CCSprite::create("HelloWorld.png");
+	world = new b2World(gravity);
+	world->SetAllowSleeping(doSleep);
 
-    // position the sprite on the center of the screen
-    pSprite->setPosition(ccp(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
 
-    // add the sprite as a child to this layer
-    this->addChild(pSprite, 0);
-    
+
+	schedule(schedule_selector(HelloWorld::tick));
+
     return true;
 }
 
+bool HelloWorld::ccTouchBegan(CCTouch *touch, CCEvent* event)
+{
+	HelloWorld::createStar(touch->getLocation());
+	return true;
+}
+
+void HelloWorld::createStar(CCPoint p)
+{
+	auto starSprite = CCSprite::create("CloseNormal.png");
+	starSprite -> setPosition(p);
+	this->addChild(starSprite,0);
+
+	// add physics
+
+	b2BodyDef starBodyDef;
+	starBodyDef.type = b2_dynamicBody;
+	starBodyDef.position = b2Vec2(starSprite->getPositionX(),starSprite->getPositionY());
+	starBodyDef.userData = starSprite;
+
+	auto starBody = world->CreateBody(&starBodyDef);
+
+	b2CircleShape circle;
+	circle.m_radius = WORLD_TO_SCREEN(0.6);
+
+	b2FixtureDef starFixDef;
+	starFixDef.shape = &circle;
+	starFixDef.density = 1.0f;
+	starFixDef.friction = 0.6f;
+	starFixDef.restitution = 0.0f;
+
+	starBody->CreateFixture(&starFixDef);
+}
+
+void HelloWorld::tick(float dt)
+{
+	int velocityIterations = 8;
+	int positionIterations = 3;
+	world->Step(dt,velocityIterations,positionIterations);
+
+	for(auto b = world->GetBodyList();b!=NULL;b=b->GetNext())
+	{
+		
+		if(b->GetUserData() != NULL)
+		{
+			auto myActor = (CCSprite*) b->GetUserData();
+			myActor -> setPosition(CCPoint(b->GetPosition().x,b->GetPosition().y));
+			myActor->setRotation(-1*CC_RADIANS_TO_DEGREES(b->GetAngle()));
+
+			if(myActor->getPositionY()< - WORLD_TO_SCREEN(1)
+				|| myActor->getPositionX() < - WORLD_TO_SCREEN(1)
+				|| myActor->getPositionX() > CCDirector::sharedDirector() ->getVisibleSize().width + WORLD_TO_SCREEN(1) )
+			{
+				//I don't know why this doesn't work
+				//this->removeChild(myActor,0);
+				//world->DestroyBody(b);
+				
+			}
+		}
+		
+	}
+}
+
+void HelloWorld::onEnter()
+{
+    CCDirector* pDirector = CCDirector::sharedDirector();
+    pDirector->getTouchDispatcher()->addTargetedDelegate(this, 0, true);
+    CCSprite::onEnter();
+}
+
+void HelloWorld::onExit()
+{
+    CCDirector* pDirector = CCDirector::sharedDirector();
+    pDirector->getTouchDispatcher()->removeDelegate(this);
+    CCSprite::onExit();
+}
+void HelloWorld::touchDelegateRetain()
+{
+    this->retain();
+}
+
+void HelloWorld::touchDelegateRelease()
+{
+    this->release();
+}
 
 void HelloWorld::menuCloseCallback(CCObject* pSender)
 {
