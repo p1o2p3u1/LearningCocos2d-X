@@ -2,8 +2,12 @@
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
+#include "Box2d/Box2D.h"
+#include "B2Sprite.h"
 
-class HelloWorld : public cocos2d::CCLayer
+#define RATIO 32
+
+class HelloWorld : public cocos2d::CCLayer,public b2ContactListener
 {
 public:
     // Here's a difference. Method 'init' in cocos2d-x returns bool, instead of returning 'id' in cocos2d-iphone
@@ -15,8 +19,27 @@ public:
     // a selector callback
     void menuCloseCallback(CCObject* pSender);
     
+
+
+	
+
     // implement the "static node()" method manually
     CREATE_FUNC(HelloWorld);
+	virtual void update(float dt);
+	virtual void ccTouchesBegan(CCSet *pTouches, CCEvent *pEvent);
+	virtual void BeginContact(b2Contact *contact);
+	CCSprite *barContainer;
+
+private:
+
+	//add bird
+	void addBird();
+	void initWorld();
+	void addGround();
+	void addBar(float dt);
+	void addBarContainer();
+	void startGame(float dt);
+	void stopGame();
 };
 
 #endif // __HELLOWORLD_SCENE_H__
