@@ -123,9 +123,8 @@ void HelloWorld::tick(float dt)
 				|| myActor->getPositionX() < - WORLD_TO_SCREEN(1)
 				|| myActor->getPositionX() > CCDirector::sharedDirector() ->getVisibleSize().width + WORLD_TO_SCREEN(1) )
 			{
-				//I don't know why this doesn't work
-				//this->removeChild(myActor,0);
-				//world->DestroyBody(b);
+				this->removeChild(myActor,0);
+				world->DestroyBody(b);
 				
 			}
 		}
